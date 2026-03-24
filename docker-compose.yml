@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: laraveljuegos-postgres
+    environment:
+      POSTGRES_DB: laraveljuegos
+      POSTGRES_USER: laravel
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U laravel -d laraveljuegos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laraveljuegos-app
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >
+      sh -lc "composer install &&
+      php artisan migrate --force &&
+      php artisan db:seed --force &&
+      php artisan serve --host=0.0.0.0 --port=8000"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

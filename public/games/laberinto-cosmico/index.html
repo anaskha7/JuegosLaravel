@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laberinto Cósmico</title>
+    <link rel="stylesheet" href="/games/shared/game-shell.css">
+</head>
+<body>
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.170.0/build/three.module.js';
+        import { finishSession, mountHud, pushEmotion, runCountdown, setScore, setStatus, startSession } from '/games/shared/api-client.js';
+
+        mountHud({
+            title: 'Laberinto Cósmico',
+            instructions: 'WASD o flechas para mover. Recoge 6 núcleos azules y toca la meta verde.',
+        });
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x08111f);
+        scene.fog = new THREE.Fog(0x08111f, 12, 34);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 11, 11);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0x88aaff, 0.6));
+        const light = new THREE.DirectionalLight(0xffffff, 1.2);
+        light.position.set(8, 14, 6);
+        light.castShadow = true;
+        scene.add(light);
+
+        const floor = new THREE.Mesh(
+            new THREE.PlaneGeometry(28, 28),
+            new THREE.MeshStandardMaterial({ color: 0x101b34, metalness: 0.2, roughness: 0.8 })
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const grid = new THREE.GridHelper(28, 28, 0x3d6fd8, 0x1a3358);
+        scene.add(grid);
+
+        const walls = [];
+        [
+            [-8, 1, -2], [-8, 1, 2], [-4, 1, 2], [0, 1, 2], [4, 1, 2], [4, 1, -2],
+            [8, 1, -2], [8, 1, 2], [0, 1, -6], [-4, 1, -6], [4, 1, 6], [-2, 1, 6],
+        ].forEach(([x, y, z]) => {
+            const wall = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 2, 2),
+                new THREE.MeshStandardMaterial({ color: 0xdc4d4d })
+            );
+            wall.position.set(x, y, z);
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            scene.add(wall);
+            walls.push(wall);
+        });
+
+        const player = new THREE.Mesh(
+            new THREE.SphereGeometry(0.55, 32, 32),
+            new THREE.MeshStandardMaterial({ color: 0xf7f3e8, emissive: 0x294469 })
+        );
+        player.position.set(-11, 0.55, -11);
+        player.castShadow = true;
+        scene.add(player);
+
+        const goal = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.8, 0.8, 0.2, 24),
+            new THREE.MeshStandardMaterial({ color: 0x47db84, emissive: 0x165c35 })
+        );
+        goal.position.set(11, 0.1, 11);
+        scene.add(goal);
+
+        const collectibles = [];
+        [
+            [-10, 0.45, 8], [-4, 0.45, -8], [1, 0.45, 10], [5, 0.45, -10], [10, 0.45, -4], [8, 0.45, 7],
+        ].forEach(([x, y, z]) => {
+            const orb = new THREE.Mesh(
+                new THREE.IcosahedronGeometry(0.45, 0),
+                new THREE.MeshStandardMaterial({ color: 0x57d5ff, emissive: 0x0d5368 })
+            );
+            orb.position.set(x, y, z);
+            scene.add(orb);
+            collectibles.push(orb);
+        });
+
+        const keys = new Set();
+        let score = 0;
+        let finished = false;
+        let gameStarted = false;
+        const clock = new THREE.Clock(false);
+
+        window.addEventListener('keydown', (event) => keys.add(event.key.toLowerCase()));
+        window.addEventListener('keyup', (event) => keys.delete(event.key.toLowerCase()));
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function collides(nextPosition) {
+            return walls.some((wall) => nextPosition.distanceTo(wall.position) < 1.35);
+        }
+
+        async function completeGame() {
+            if (finished) {
+                return;
+            }
+
+            finished = true;
+            const timeBonus = Math.max(0, 180 - Math.round(clock.getElapsedTime()));
+            score += timeBonus;
+            setScore(score);
+            setStatus(`Meta alcanzada. Bonus ${timeBonus}`);
+            await pushEmotion('joy', 0.82, { phase: 'finish', score });
+            await finishSession(score, { collected: 6, elapsed_seconds: Math.round(clock.getElapsedTime()) });
+        }
+
+        function animate() {
+            const elapsed = clock.getElapsedTime();
+            const direction = new THREE.Vector3();
+            const speed = 0.085;
+
+            if (gameStarted && !finished) {
+                if (keys.has('w') || keys.has('arrowup')) direction.z -= speed;
+                if (keys.has('s') || keys.has('arrowdown')) direction.z += speed;
+                if (keys.has('a') || keys.has('arrowleft')) direction.x -= speed;
+                if (keys.has('d') || keys.has('arrowright')) direction.x += speed;
+
+                const nextPosition = player.position.clone().add(direction);
+
+                if (!collides(nextPosition)) {
+                    player.position.copy(nextPosition);
+                }
+
+                collectibles.forEach((orb) => {
+                    orb.rotation.y += 0.03;
+                    orb.position.y = 0.45 + Math.sin(elapsed * 2 + orb.position.x) * 0.08;
+
+                    if (orb.visible && orb.position.distanceTo(player.position) < 0.95) {
+                        orb.visible = false;
+                        score += 20;
+                        setScore(score);
+                        setStatus(`Núcleo recogido: ${score} puntos`);
+                    }
+                });
+
+                if (collectibles.every((orb) => !orb.visible) && player.position.distanceTo(goal.position) < 1.1) {
+                    completeGame();
+                }
+            }
+
+            goal.rotation.y += 0.02;
+            camera.position.x = player.position.x;
+            camera.position.z = player.position.z + 10;
+            camera.lookAt(player.position.x, 0, player.position.z);
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        setScore(0);
+        await runCountdown(5);
+        await startSession({ mode: 'maze' });
+        clock.start();
+        gameStarted = true;
+        animate();
+    </script>
+</body>
+</html>

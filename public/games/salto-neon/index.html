@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carril Neón</title>
+    <link rel="stylesheet" href="/games/shared/game-shell.css">
+</head>
+<body>
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.170.0/build/three.module.js';
+        import { finishSession, mountHud, pushEmotion, runCountdown, setScore, setStatus, startSession } from '/games/shared/api-client.js';
+
+        mountHud({
+            title: 'Carril Neón',
+            instructions: 'A y D o flechas para cambiar de carril. Esquiva barreras y sobrevive 40 segundos.',
+        });
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x07030f);
+        scene.fog = new THREE.Fog(0x07030f, 10, 46);
+
+        const camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.1, 140);
+        camera.position.set(0, 6, 9);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.52));
+        const light = new THREE.PointLight(0x52f7ff, 22, 90);
+        light.position.set(0, 12, 8);
+        scene.add(light);
+
+        const road = new THREE.Mesh(
+            new THREE.BoxGeometry(11, 0.5, 56),
+            new THREE.MeshStandardMaterial({ color: 0x12152a, metalness: 0.3, roughness: 0.7 })
+        );
+        road.position.set(0, -0.25, -18);
+        scene.add(road);
+
+        const laneMarkers = [];
+        for (let index = -1; index <= 1; index += 1) {
+            const marker = new THREE.Mesh(
+                new THREE.BoxGeometry(0.15, 0.05, 56),
+                new THREE.MeshBasicMaterial({ color: 0x29e0ff })
+            );
+            marker.position.set(index * 3.2, 0.02, -18);
+            scene.add(marker);
+            laneMarkers.push(marker);
+        }
+
+        const player = new THREE.Mesh(
+            new THREE.BoxGeometry(1.1, 1.1, 1.1),
+            new THREE.MeshStandardMaterial({ color: 0xfff06d, emissive: 0x615d12 })
+        );
+        player.position.set(0, 0.7, 6);
+        scene.add(player);
+
+        const starField = new THREE.Points(
+            new THREE.BufferGeometry().setAttribute(
+                'position',
+                new THREE.Float32BufferAttribute(
+                    Array.from({ length: 900 }, () => (Math.random() - 0.5) * 130),
+                    3
+                )
+            ),
+            new THREE.PointsMaterial({ color: 0xffffff, size: 0.14 })
+        );
+        scene.add(starField);
+
+        const lanes = [-3.2, 0, 3.2];
+        const obstacles = [];
+        let laneIndex = 1;
+        let targetX = lanes[laneIndex];
+        let score = 0;
+        let ended = false;
+        let gameStarted = false;
+        const clock = new THREE.Clock(false);
+        let lastSpawn = 0;
+
+        function spawnObstacle() {
+            const lane = Math.floor(Math.random() * lanes.length);
+            const obstacle = new THREE.Mesh(
+                new THREE.BoxGeometry(2.1, 2.2, 1.6),
+                new THREE.MeshStandardMaterial({ color: 0xff5c8f, emissive: 0x57122a })
+            );
+            obstacle.position.set(lanes[lane], 1.1, -38);
+            scene.add(obstacle);
+            obstacles.push(obstacle);
+        }
+
+        for (let index = 0; index < 5; index += 1) {
+            spawnObstacle();
+            obstacles[index].position.z -= index * 8;
+        }
+
+        window.addEventListener('keydown', (event) => {
+            if (!gameStarted || ended) {
+                return;
+            }
+
+            if (event.key.toLowerCase() === 'a' || event.key === 'ArrowLeft') {
+                laneIndex = Math.max(0, laneIndex - 1);
+            }
+            if (event.key.toLowerCase() === 'd' || event.key === 'ArrowRight') {
+                laneIndex = Math.min(lanes.length - 1, laneIndex + 1);
+            }
+            targetX = lanes[laneIndex];
+        });
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        async function endGame(outcome) {
+            if (ended) {
+                return;
+            }
+
+            ended = true;
+            setStatus(outcome);
+            await pushEmotion(outcome.includes('superado') ? 'joy' : 'stress', 0.76, { score });
+            await finishSession(score, {
+                survived_seconds: Math.round(clock.getElapsedTime()),
+                outcome,
+            });
+        }
+
+        function animate() {
+            const elapsed = clock.getElapsedTime();
+            const surviveTarget = 40;
+
+            if (gameStarted && !ended) {
+                player.position.x += (targetX - player.position.x) * 0.18;
+                score = Math.floor(elapsed * 8);
+                setScore(score);
+                setStatus(`Supervivencia ${Math.min(surviveTarget, Math.floor(elapsed))}/${surviveTarget}s`);
+
+                if (elapsed - lastSpawn > 1.4) {
+                    spawnObstacle();
+                    lastSpawn = elapsed;
+                }
+
+                obstacles.forEach((obstacle, index) => {
+                    obstacle.position.z += 0.34 + elapsed * 0.003;
+                    obstacle.rotation.y += 0.02;
+
+                    if (obstacle.position.z > 12) {
+                        scene.remove(obstacle);
+                        obstacles.splice(index, 1);
+                    }
+
+                    const hitX = Math.abs(obstacle.position.x - player.position.x) < 1.3;
+                    const hitZ = Math.abs(obstacle.position.z - player.position.z) < 1.1;
+                    if (hitX && hitZ) {
+                        endGame('colisión detectada');
+                    }
+                });
+
+                if (elapsed >= surviveTarget) {
+                    endGame('circuito superado');
+                }
+            }
+
+            camera.position.x += (player.position.x - camera.position.x) * 0.08;
+            camera.lookAt(player.position.x, 1.2, player.position.z - 12);
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        setScore(0);
+        await runCountdown(5);
+        await startSession({ mode: 'lane-runner' });
+        clock.start();
+        gameStarted = true;
+        animate();
+    </script>
+</body>
+</html>
