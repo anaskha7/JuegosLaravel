@@ -1,14 +1,3 @@
-# Laravel Juegos
-
-Este proyecto es una plataforma web de juegos hecha con Laravel.
-
-La idea principal es que la web funcione como un pequeño CRM de juegos:
-
-- los usuarios pueden registrarse e iniciar sesión,
-- según su rol pueden gestionar o jugar,
-- los juegos se muestran dentro de la propia plataforma,
-- Laravel guarda la información de usuarios, juegos y partidas.
-
 ## Qué tecnologías se han usado
 
 Estas son las herramientas principales del proyecto y para qué se usan:
@@ -198,12 +187,6 @@ Esto deja levantado:
 - PostgreSQL,
 - migraciones,
 - datos de prueba.
-
-No borra la base de datos en cada arranque. Si quieres reiniciar todo desde cero, entonces sí puedes usar:
-
-```bash
-docker compose exec app php artisan migrate:fresh --seed
-```
 
 La aplicación queda disponible en:
 
