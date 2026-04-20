@@ -1,9 +1,10 @@
-import { Link, useForm } from '@inertiajs/react';
+import { Link, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import AuthLayout from '../../Layouts/AuthLayout';
 import FaceCaptureField from '../../Components/FaceCaptureField';
 
 export default function Login() {
+    const { flash } = usePage().props;
     const [faceSubmitting, setFaceSubmitting] = useState(false);
     const form = useForm({
         email: '',
@@ -73,6 +74,8 @@ export default function Login() {
             <h2>Bienvenido de nuevo</h2>
             <p className="muted">Accede con tu cuenta.</p>
 
+            {flash?.status && <div className="flash">{flash.status}</div>}
+
             <form className="form-grid" onSubmit={submit}>
                 <div className="field">
                     <label htmlFor="email">Email</label>
@@ -114,6 +117,10 @@ export default function Login() {
                     <Link className="button ghost" href="/register">
                         Crear cuenta
                     </Link>
+                </div>
+
+                <div className="muted auth-links-row">
+                    <Link href="/recuperar-password">He olvidado la contraseña</Link>
                 </div>
             </form>
 

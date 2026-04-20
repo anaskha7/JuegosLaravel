@@ -39,7 +39,6 @@ export default function AppLayout({ title, children }) {
 
                     <div className="nav-actions">
                         <div className="nav-user-wrap">
-                            <span className="nav-user-dot" />
                             <span className="pill nav-user">
                                 {user?.name} · {user?.role_label}
                             </span>

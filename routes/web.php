@@ -3,6 +3,7 @@
 use App\Enums\UserRole;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\FaceLoginController;
+use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\DashboardController;
@@ -25,6 +26,12 @@ Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
     Route::post('/login/face-id', [FaceLoginController::class, 'store'])->name('login.face');
+    Route::get('/recuperar-password', [PasswordRecoveryController::class, 'createRequest'])->name('password.request');
+    Route::post('/recuperar-password', [PasswordRecoveryController::class, 'sendCode'])->name('password.email');
+    Route::get('/recuperar-password/codigo', [PasswordRecoveryController::class, 'createVerify'])->name('password.verify');
+    Route::post('/recuperar-password/codigo', [PasswordRecoveryController::class, 'verifyCode'])->name('password.verify.store');
+    Route::get('/recuperar-password/nueva', [PasswordRecoveryController::class, 'createReset'])->name('password.reset');
+    Route::post('/recuperar-password/nueva', [PasswordRecoveryController::class, 'resetPassword'])->name('password.reset.store');
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 });
