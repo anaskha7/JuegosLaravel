@@ -14,17 +14,17 @@ canvas {
 
 .hud {
     position: fixed;
-    inset: 16px 16px auto 16px;
-    display: flex;
-    justify-content: space-between;
+    inset: auto 16px 16px 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
     gap: 12px;
-    align-items: flex-start;
+    align-items: end;
     z-index: 10;
     pointer-events: none;
 }
 
 .panel {
-    max-width: 380px;
+    max-width: none;
     padding: 12px 14px;
     border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 16px;
@@ -45,14 +45,19 @@ canvas {
     font-size: 14px;
 }
 
+.panel-main {
+    max-width: 520px;
+}
+
 .status {
-    text-align: right;
-    min-width: 180px;
+    justify-self: end;
+    min-width: 220px;
+    text-align: left;
 }
 
 .overlay {
     position: fixed;
-    inset: auto 16px 16px auto;
+    inset: 16px 16px auto auto;
     z-index: 10;
     padding: 10px 12px;
     border-radius: 999px;
@@ -94,4 +99,22 @@ canvas {
     font-size: clamp(4.2rem, 12vw, 7rem);
     line-height: 1;
     font-weight: 800;
+}
+
+@media (max-width: 780px) {
+    .hud {
+        grid-template-columns: 1fr;
+        inset: auto 12px 12px 12px;
+    }
+
+    .panel-main,
+    .status {
+        max-width: none;
+        min-width: 0;
+        justify-self: stretch;
+    }
+
+    .overlay {
+        inset: 12px 12px auto auto;
+    }
 }

@@ -7,15 +7,31 @@ const runtime = {
     startedAt: null,
 };
 
+function notifyHost(type, payload = {}) {
+    if (window.parent === window) {
+        return;
+    }
+
+    window.parent.postMessage(
+        {
+            source: 'laraveljuegos-game',
+            type,
+            gameId: runtime.gameId,
+            ...payload,
+        },
+        window.location.origin
+    );
+}
+
 export function mountHud({ title, instructions }) {
     const hud = document.createElement('div');
     hud.className = 'hud';
     hud.innerHTML = `
-        <div class="panel">
+        <div class="panel panel-main">
             <strong>${title}</strong>
             <p>${instructions}</p>
         </div>
-        <div class="panel status">
+        <div class="panel panel-status status">
             <strong>Estado</strong>
             <p id="status-line">Preparando sesión...</p>
         </div>
@@ -41,6 +57,20 @@ export function setScore(value) {
     if (node) {
         node.textContent = `Puntuación: ${value}`;
     }
+}
+
+export function bloquearTeclasDeScroll(keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ']) {
+    const blockedKeys = new Set(keys);
+
+    window.addEventListener(
+        'keydown',
+        (event) => {
+            if (blockedKeys.has(event.key)) {
+                event.preventDefault();
+            }
+        },
+        { passive: false }
+    );
 }
 
 export async function runCountdown(seconds = 5) {
@@ -104,12 +134,17 @@ export async function startSession(metadata = {}) {
     runtime.sessionId = payload.data.id;
     runtime.startedAt = payload.data.started_at;
     setStatus(`Sesión #${runtime.sessionId} iniciada`);
+    notifyHost('session-started', {
+        sessionId: runtime.sessionId,
+    });
 }
 
 export async function finishSession(score, metadata = {}) {
     if (!runtime.sessionId) {
         return;
     }
+
+    const finishedSessionId = runtime.sessionId;
 
     try {
         await apiFetch(`/api/sessions/${runtime.sessionId}/finish`, {
@@ -125,6 +160,11 @@ export async function finishSession(score, metadata = {}) {
         setStatus(`Partida registrada. Score ${score}`);
     } catch (error) {
         setStatus(`No se pudo cerrar la sesión: ${error.message}`);
+    } finally {
+        notifyHost('session-finished', {
+            sessionId: finishedSessionId,
+        });
+        runtime.sessionId = null;
     }
 }
 

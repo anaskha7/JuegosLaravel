@@ -35,5 +35,30 @@ services:
       postgres:
         condition: service_healthy
 
+  reverb:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laraveljuegos-reverb
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >
+      sh -lc "composer install &&
+      php artisan reverb:start --host=0.0.0.0 --port=8080"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  facial-service:
+    build:
+      context: ./facial-service
+      dockerfile: Dockerfile
+    container_name: laraveljuegos-facial-service
+    ports:
+      - "8181:8181"
+
 volumes:
   postgres_data:

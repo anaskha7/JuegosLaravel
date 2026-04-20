@@ -9,12 +9,13 @@
 <body>
     <script type="module">
         import * as THREE from 'https://unpkg.com/three@0.170.0/build/three.module.js';
-        import { finishSession, mountHud, pushEmotion, runCountdown, setScore, setStatus, startSession } from '/games/shared/api-client.js';
+        import { bloquearTeclasDeScroll, finishSession, mountHud, pushEmotion, runCountdown, setScore, setStatus, startSession } from '/games/shared/api-client.js';
 
         mountHud({
             title: 'Carril Neón',
             instructions: 'A y D o flechas para cambiar de carril. Esquiva barreras y sobrevive 40 segundos.',
         });
+        bloquearTeclasDeScroll();
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x07030f);

@@ -27,6 +27,9 @@ export default function AppLayout({ title, children }) {
                         <Link className="nav-link" href="/catalogo">
                             Catálogo
                         </Link>
+                        <Link className="nav-link" href="/seguridad/face-id">
+                            Seguridad
+                        </Link>
                         {privileged && (
                             <Link className="nav-link" href="/gestion/juegos">
                                 Gestión

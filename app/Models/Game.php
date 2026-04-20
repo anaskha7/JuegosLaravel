@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\GameStatus;
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -38,6 +39,24 @@ class Game extends Model
     public function sessions(): HasMany
     {
         return $this->hasMany(GameSession::class);
+    }
+
+    public function chatMessages(): HasMany
+    {
+        return $this->hasMany(GameChatMessage::class);
+    }
+
+    public function isAccessibleBy(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($this->status === GameStatus::Published) {
+            return true;
+        }
+
+        return $user->hasAnyRole(UserRole::Admin, UserRole::Manager);
     }
 
     public function playableUrl(array $query = []): string

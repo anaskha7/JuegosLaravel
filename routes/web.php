@@ -2,9 +2,12 @@
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\FaceLoginController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FaceReferenceController;
+use App\Http\Controllers\GameChatMessageController;
 use App\Http\Controllers\GameController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,14 +24,21 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+    Route::post('/login/face-id', [FaceLoginController::class, 'store'])->name('login.face');
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 });
 
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::get('/seguridad/face-id', [FaceReferenceController::class, 'edit'])->name('face-security.edit');
+    Route::post('/seguridad/face-id', [FaceReferenceController::class, 'store'])->name('face-security.store');
+    Route::delete('/seguridad/face-id', [FaceReferenceController::class, 'destroy'])->name('face-security.destroy');
     Route::get('/catalogo', [CatalogController::class, 'index'])->name('catalog.index');
     Route::get('/catalogo/{game}', [CatalogController::class, 'show'])->name('catalog.show');
+    Route::post('/catalogo/{game}/chat/messages', [GameChatMessageController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('games.chat.store');
 
     Route::middleware('role:admin,manager')->group(function (): void {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');

@@ -26,6 +26,7 @@ class HandleInertiaRequests extends Middleware
                         'name' => $request->user()->name,
                         'email' => $request->user()->email,
                         'api_token' => $request->user()->api_token,
+                        'has_face_reference' => $request->user()->hasFaceReference(),
                         'role_name' => $request->user()->role_name,
                         'role_label' => $request->user()->role_label,
                         'roles' => $request->user()->roles->map(fn ($role) => [

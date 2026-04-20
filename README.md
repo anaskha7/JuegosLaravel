@@ -1,178 +1,243 @@
-## Qué tecnologías se han usado
+# Plataforma de Juegos
 
-Estas son las herramientas principales del proyecto y para qué se usan:
+## Qué es este proyecto
 
-- `Laravel`: es la base del proyecto. Se encarga de las rutas, la autenticación, los permisos, la base de datos y la API.
-- `Inertia + React`: se usan para la parte visual del CRM. Laravel sigue controlando el acceso, pero la interfaz se pinta con React.
-- `PostgreSQL`: es la base de datos principal del proyecto.
-- `Three.js`: se usa para los juegos del catálogo.
-- `Docker`: se usa para levantar el proyecto de forma más cómoda junto con PostgreSQL.
-- `Vite`: se usa para compilar los archivos del frontend.
+Este proyecto es una plataforma web de juegos.
 
-## Cómo está organizado el proyecto
+La idea es sencilla:
 
-El proyecto está separado en dos partes:
+- una persona se registra o inicia sesión,
+- entra en la plataforma,
+- ve un catálogo de juegos,
+- abre un juego,
+- juega dentro de la propia web,
+- y el sistema guarda lo que ha pasado en la partida.
 
-- `routes/web.php`: aquí están las rutas de la web, como login, dashboard, catálogo y gestión.
-- `routes/api.php`: aquí están las rutas que usan los juegos para comunicarse con Laravel.
+Además, hay una parte de gestión para las personas que administran la plataforma.
 
-De esta forma, una cosa es la web que ve el usuario y otra la API que usan los juegos.
+## Qué puede hacer cada tipo de usuario
 
-## Base de datos
+En la plataforma hay 3 tipos de usuario:
 
-La base de datos del proyecto está preparada para trabajar con PostgreSQL.
+- `Administrador`: puede controlar el sistema y gestionar los juegos.
+- `Gestor`: puede crear juegos, editarlos y decidir si se publican o no.
+- `Jugador`: puede entrar al catálogo y jugar a los juegos publicados.
 
-En el archivo `.env` se configura la conexión con estos datos:
+Esto significa que no todo el mundo puede entrar en todas las zonas.
 
-```env
-DB_CONNECTION=pgsql
-DB_HOST=postgres
-DB_PORT=5432
-DB_DATABASE=laraveljuegos
-DB_USERNAME=laravel
-DB_PASSWORD=secret
-```
+Por ejemplo:
 
-## Qué tablas principales tiene
+- un jugador no puede entrar en la parte de gestión,
+- un gestor sí puede trabajar con los juegos,
+- y un administrador tiene el control completo.
 
-Estas son las partes más importantes guardadas en base de datos:
+## Qué hace la plataforma
 
-- `users`: usuarios de la plataforma.
-- `roles`: roles disponibles.
-- `role_user`: relación entre usuarios y roles.
-- `games`: catálogo de juegos.
-- `game_sessions`: partidas o sesiones de juego.
-- `emotion_readings`: lecturas emocionales enviadas durante una partida.
+La plataforma tiene varias partes.
 
-## Usuarios y roles
+### 1. Inicio de sesión y registro
 
-Hay tres roles principales:
+Una persona puede:
 
-- `admin`: puede gestionar el sistema y los juegos.
-- `manager`: puede gestionar los juegos.
-- `player`: puede entrar al catálogo y jugar.
-
-Los permisos se controlan desde Laravel, no desde el frontend. Eso significa que un jugador no puede entrar en gestión aunque escriba la URL manualmente.
-
-## Autenticación
-
-La autenticación es real y funcional.
-
-El sistema permite:
-
-- registrarse,
+- crear su cuenta,
 - iniciar sesión,
 - cerrar sesión,
-- proteger rutas para que solo entren usuarios autorizados.
+- y volver a entrar más tarde.
 
-## Parte visual del CRM
+Todo esto funciona de verdad. No es una simulación.
 
-La interfaz del proyecto está hecha con Inertia y React.
+### 2. Catálogo de juegos
 
-Las pantallas principales son:
+Cuando un jugador entra, ve una lista con los juegos que están publicados.
 
-- login,
-- registro,
-- dashboard,
-- catálogo,
-- detalle de juego,
-- gestión de juegos,
-- formulario para crear o editar juegos.
+Solo aparecen los juegos que están listos para jugar.
 
-Laravel sigue llevando el control de las rutas, la seguridad y los permisos. React solo se usa para mostrar la interfaz y mover al usuario por la aplicación.
+Desde ese catálogo puede:
 
-## Gestión de juegos
+- ver el juego,
+- entrar en su página,
+- jugar sin salir de la plataforma.
 
-El sistema tiene un CRUD de juegos para administrador y gestor.
+### 3. Gestión de juegos
 
-Cada juego guarda como mínimo:
+La parte de gestión sirve para organizar el catálogo.
 
-- título,
-- descripción,
-- instrucciones,
-- estado,
-- ruta o URL del juego,
-- usuario creador.
+Desde ahí se puede:
 
-Desde gestión se puede:
+- crear un juego nuevo,
+- cambiar el título,
+- cambiar la descripción,
+- cambiar la ruta o enlace del juego,
+- publicar un juego,
+- ocultar un juego,
+- editar lo que ya existe.
 
-- crear juegos,
-- editar juegos,
-- publicar o despublicar,
-- eliminar,
-- ver la ficha del juego.
+La idea es que el juego se pueda gestionar desde la plataforma sin tener que tocar el código cada vez.
 
-## Experiencia del jugador
+### 4. Partidas
 
-El jugador solo ve los juegos publicados.
+Cuando una persona juega, la plataforma guarda información de esa partida.
 
-Los juegos se cargan dentro de la plataforma, no como una web separada. Así la experiencia queda integrada con el resto del sistema.
+Por ejemplo:
 
-Los juegos actuales están en `public/games` y usan Three.js.
+- quién ha jugado,
+- a qué juego ha jugado,
+- cuándo empezó,
+- cuándo terminó,
+- cuánto duró,
+- y el resultado.
 
-Ahora mismo el catálogo incluye:
+### 5. Chat en vivo
 
-- `Laberinto Cósmico`
-- `Orb Rush`
-- `Carril Neón`
+Al lado del juego hay un chat para que los jugadores puedan escribir en directo.
 
-Además, antes de empezar una partida hay una cuenta atrás de 5 segundos.
+Sirve para:
 
-## API del proyecto
+- hablar mientras están en la partida,
+- dejar mensajes,
+- ver lo que escriben otras personas sin recargar la página.
 
-La API sirve para que los juegos puedan hablar con Laravel.
+### 6. Face ID
 
-Por ejemplo, permite:
+El login también tiene una opción de `Face ID`.
 
-- obtener la lista de juegos,
-- iniciar una partida,
-- terminar una partida,
-- enviar lecturas emocionales.
+Funciona así:
 
-Algunas rutas importantes son:
+- en la pantalla de login escribes tu email,
+- eliges entrar con Face ID,
+- el sistema hace una foto con la cámara,
+- si es la primera vez, esa foto se guarda como referencia,
+- si ya existe una foto guardada, la nueva se compara con la anterior,
+- y si coincide, entras.
 
-- `GET /api/games`
-- `POST /api/sessions/start`
-- `PATCH /api/sessions/{session}/finish`
-- `POST /api/sessions/{session}/emotions`
+La web no compara la cara por sí sola.
+La web envía las imágenes a un pequeño servicio aparte y ese servicio responde si coincide o no.
 
-## Cómo se ha hecho cada parte de la práctica
+### 7. Estados de ánimo
 
-### 1. Base del proyecto
+Mientras una persona juega, la web también puede detectar el estado de ánimo usando la cámara.
 
-Se creó un proyecto Laravel y se organizó separando controladores, modelos, middleware, rutas web y rutas API.
+La idea es simple:
 
-### 2. Base de datos
+- el navegador mira la cara en ese momento,
+- detecta si la expresión parece neutral, alegre, triste, enfadada o sorprendida,
+- y guarda solo ese dato simple dentro de la partida.
 
-Se prepararon migraciones para usuarios, roles, juegos, sesiones y emociones. También se configuró PostgreSQL como base principal.
+Es importante entender esto:
 
-### 3. Autenticación
+- no se guarda el vídeo,
+- no se suben fotos al servidor para esta parte,
+- y lo que se guarda no es la cara, sino una lectura simple del momento.
 
-Se implementó registro, inicio de sesión y cierre de sesión con Laravel. Las rutas privadas están protegidas.
+Esto sirve para relacionar cómo estaba el jugador con lo que iba pasando en la partida.
 
-### 4. Roles y permisos
+## Qué juegos hay ahora mismo
 
-Se añadieron los roles `admin`, `manager` y `player`, y se usa middleware para decidir quién puede entrar a cada zona.
+Ahora mismo el catálogo incluye varios juegos simples hechos para la plataforma.
 
-### 5. API
+Están pensados para que:
 
-La API está separada de la parte web y devuelve datos en formato JSON para que los juegos puedan conectarse con Laravel.
+- se puedan abrir dentro de la web,
+- ocupen su espacio dentro de la plataforma,
+- y puedan conectarse con el sistema.
 
-### 6. Gestión de juegos
+Antes de empezar la partida hay una cuenta atrás de 5 segundos.
 
-Se creó un panel donde administrador y gestor pueden crear, editar, publicar y revisar juegos sin tener que tocar el código del juego.
+## Cómo está hecho el proyecto
 
-### 7. Catálogo y juego dentro de la plataforma
+Aunque por fuera se vea como una sola web, por dentro está separado en varias partes para que todo esté más ordenado.
 
-El jugador entra al catálogo, ve solo juegos publicados y los abre dentro de la propia aplicación.
+### La parte principal
+
+La parte principal está hecha con `Laravel`.
+
+Esta parte se encarga de:
+
+- controlar el acceso,
+- saber quién puede entrar a cada zona,
+- guardar la información en la base de datos,
+- y responder a los juegos cuando necesitan enviar datos.
+
+### La parte visual
+
+La parte que se ve en pantalla está hecha con `React` usando `Inertia`.
+
+Dicho de forma simple:
+
+- Laravel manda la lógica,
+- y React pinta la interfaz para que se vea mejor y sea más cómoda.
+
+### La base de datos
+
+La información se guarda en `PostgreSQL`.
+
+Ahí se guardan cosas como:
+
+- usuarios,
+- roles,
+- juegos,
+- partidas,
+- mensajes del chat.
+
+### Los juegos
+
+Los juegos están hechos con `Three.js`.
+
+Eso permite crear juegos visuales dentro del navegador.
+
+Los juegos no están metidos dentro del código principal de Laravel.
+Están aparte, pero conectados con la plataforma.
+
+### El servicio facial
+
+La parte de reconocimiento facial está hecha en `Python` y va en un contenedor aparte.
+
+Su trabajo es uno muy concreto:
+
+- recibir dos imágenes,
+- compararlas,
+- decir si son de la misma persona o no.
+
+### Docker
+
+Se usa `Docker` para que sea más fácil poner en marcha todo el proyecto.
+
+En vez de instalar cada cosa por separado, Docker levanta los servicios necesarios ya preparados.
+
+## Qué guarda la base de datos
+
+Las partes más importantes que guarda el sistema son estas:
+
+- usuarios,
+- roles de usuario,
+- juegos,
+- partidas,
+- mensajes del chat,
+- referencia facial para el acceso con cámara.
+
+## Cómo se comunican los juegos con la plataforma
+
+Los juegos pueden hablar con la plataforma para enviar información.
+
+Por ejemplo, un juego puede avisar de:
+
+- que una partida ha empezado,
+- que una partida ha terminado,
+- el resultado final,
+- o datos que se quieran guardar.
+
+Esto sirve para que el juego y la plataforma trabajen juntos.
 
 ## Cómo arrancar el proyecto
 
-### 1. Instalar y compilar el frontend
+La forma más fácil es con Docker.
+
+### 1. Preparar el archivo de configuración
+
+Copia el archivo de ejemplo:
 
 ```bash
-docker run --rm -v "$PWD":/app -w /app node:22 npm install
-docker run --rm -v "$PWD":/app -w /app node:22 npm run build
+cp .env.example .env
 ```
 
 ### 2. Levantar el proyecto
@@ -181,18 +246,17 @@ docker run --rm -v "$PWD":/app -w /app node:22 npm run build
 docker compose up --build
 ```
 
-Esto deja levantado:
+Con eso se levantan las partes principales del proyecto.
 
-- Laravel,
-- PostgreSQL,
-- migraciones,
-- datos de prueba.
+### 3. Abrir la web
 
-La aplicación queda disponible en:
+La aplicación queda en:
 
 [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
-## Credenciales de prueba
+## Cuentas de prueba
+
+Para entrar rápido y probar la plataforma puedes usar estas cuentas:
 
 - `admin@laraveljuegos.test` / `password`
 - `gestor@laraveljuegos.test` / `password`

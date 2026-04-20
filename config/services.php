@@ -34,4 +34,9 @@ return [
         ],
     ],
 
+    'facial' => [
+        'url' => env('FACIAL_SERVICE_URL', ''),
+        'timeout' => env('FACIAL_SERVICE_TIMEOUT', 60),
+    ],
+
 ];

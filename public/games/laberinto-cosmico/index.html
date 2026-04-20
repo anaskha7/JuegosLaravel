@@ -9,12 +9,13 @@
 <body>
     <script type="module">
         import * as THREE from 'https://unpkg.com/three@0.170.0/build/three.module.js';
-        import { finishSession, mountHud, pushEmotion, runCountdown, setScore, setStatus, startSession } from '/games/shared/api-client.js';
+        import { bloquearTeclasDeScroll, finishSession, mountHud, pushEmotion, runCountdown, setScore, setStatus, startSession } from '/games/shared/api-client.js';
 
         mountHud({
             title: 'Laberinto Cósmico',
             instructions: 'WASD o flechas para mover. Recoge 6 núcleos azules y toca la meta verde.',
         });
+        bloquearTeclasDeScroll();
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x08111f);

@@ -27,7 +27,9 @@ class RegisteredUserController extends Controller
         ]);
 
         $user = User::query()->create([
-            ...$validated,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
             'api_token' => bin2hex(random_bytes(24)),
         ]);
         $user->syncRoles([UserRole::Player]);

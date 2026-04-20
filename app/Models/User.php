@@ -24,6 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'api_token',
+        'face_reference_path',
     ];
 
     /**
@@ -35,6 +36,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'api_token',
+        'face_reference_path',
     ];
 
     /**
@@ -63,6 +65,11 @@ class User extends Authenticatable
     public function gameSessions(): HasMany
     {
         return $this->hasMany(GameSession::class);
+    }
+
+    public function chatMessages(): HasMany
+    {
+        return $this->hasMany(GameChatMessage::class);
     }
 
     public function hasAnyRole(UserRole|string ...$roles): bool
@@ -109,5 +116,10 @@ class User extends Authenticatable
         }
 
         return UserRole::from($roleName)->label();
+    }
+
+    public function hasFaceReference(): bool
+    {
+        return filled($this->face_reference_path);
     }
 }

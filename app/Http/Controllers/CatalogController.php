@@ -33,9 +33,17 @@ class CatalogController extends Controller
     public function show(Game $game): Response
     {
         $user = request()->user();
-        $canPreview = $user?->hasAnyRole(UserRole::Admin, UserRole::Manager);
+        $canPreview = $user?->hasAnyRole(UserRole::Admin, UserRole::Manager) ?? false;
 
-        abort_if($game->status !== GameStatus::Published && ! $canPreview, 404);
+        abort_unless($game->isAccessibleBy($user), 404);
+
+        $messages = $game->chatMessages()
+            ->with('user.roles')
+            ->latest()
+            ->take(30)
+            ->get()
+            ->reverse()
+            ->values();
 
         return Inertia::render('Catalog/Show', [
             'game' => [
@@ -50,6 +58,13 @@ class CatalogController extends Controller
                     'game_id' => $game->id,
                     'token' => $user?->api_token,
                 ]),
+            ],
+            'chat' => [
+                'channel' => 'games.'.$game->id,
+                'post_url' => route('games.chat.store', $game),
+                'messages' => $messages->map(
+                    fn ($message) => $message->toChatPayload()
+                )->all(),
             ],
             'canPreview' => $canPreview,
         ]);

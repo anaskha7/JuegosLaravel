@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\GameStatus;
 use App\Enums\UserRole;
 use App\Models\Game;
+use App\Models\GameChatMessage;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -31,14 +32,12 @@ class ExampleTest extends TestCase
 
     public function test_authenticated_users_can_open_dashboard(): void
     {
-        $user = User::query()->create([
-            'name' => 'Gestor Test',
-            'email' => 'gestor-test@example.com',
-            'password' => 'password',
-            'api_token' => 'test-token',
-        ]);
-        Role::query()->create(['name' => UserRole::Manager->value, 'label' => UserRole::Manager->label()]);
-        $user->syncRoles([UserRole::Manager]);
+        $user = $this->createUserWithRole(
+            UserRole::Manager,
+            'Gestor Test',
+            'gestor-test@example.com',
+            'test-token'
+        );
 
         $response = $this->actingAs($user)->get('/dashboard');
 
@@ -48,14 +47,12 @@ class ExampleTest extends TestCase
 
     public function test_players_cannot_open_dashboard(): void
     {
-        $user = User::query()->create([
-            'name' => 'Jugador Test',
-            'email' => 'jugador-test@example.com',
-            'password' => 'password',
-            'api_token' => 'test-token-player',
-        ]);
-        Role::query()->create(['name' => UserRole::Player->value, 'label' => UserRole::Player->label()]);
-        $user->syncRoles([UserRole::Player]);
+        $user = $this->createUserWithRole(
+            UserRole::Player,
+            'Jugador Test',
+            'jugador-test@example.com',
+            'test-token-player'
+        );
 
         $response = $this->actingAs($user)->get('/dashboard');
 
@@ -64,14 +61,12 @@ class ExampleTest extends TestCase
 
     public function test_internal_games_use_relative_play_urls(): void
     {
-        $user = User::query()->create([
-            'name' => 'Jugador Test 2',
-            'email' => 'jugador-test-2@example.com',
-            'password' => 'password',
-            'api_token' => 'test-token-player-2',
-        ]);
-        Role::query()->create(['name' => UserRole::Player->value, 'label' => UserRole::Player->label()]);
-        $user->syncRoles([UserRole::Player]);
+        $user = $this->createUserWithRole(
+            UserRole::Player,
+            'Jugador Test 2',
+            'jugador-test-2@example.com',
+            'test-token-player-2'
+        );
 
         $game = Game::query()->create([
             'title' => 'Juego Test',
@@ -89,5 +84,97 @@ class ExampleTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('Catalog/Show')
             ->where('game.play_url', "/games/laberinto-cosmico/index.html?game_id={$game->id}&token=test-token-player-2"));
+    }
+
+    public function test_players_can_send_messages_in_published_game_chat(): void
+    {
+        $user = $this->createUserWithRole(
+            UserRole::Player,
+            'Chat Player',
+            'chat-player@example.com',
+            'chat-player-token'
+        );
+
+        $game = Game::query()->create([
+            'title' => 'Juego Chat',
+            'slug' => 'juego-chat',
+            'description' => 'Descripcion de prueba',
+            'instructions' => 'Instrucciones de prueba',
+            'status' => GameStatus::Published,
+            'game_url' => '/games/laberinto-cosmico/index.html',
+            'created_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)->postJson(route('games.chat.store', $game), [
+            'message' => 'Hola equipo',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('message.message', 'Hola equipo')
+            ->assertJsonPath('message.user.name', 'Chat Player');
+
+        $this->assertDatabaseHas('game_chat_messages', [
+            'game_id' => $game->id,
+            'user_id' => $user->id,
+            'message' => 'Hola equipo',
+        ]);
+    }
+
+    public function test_players_cannot_send_messages_in_unpublished_game_chat(): void
+    {
+        $manager = $this->createUserWithRole(
+            UserRole::Manager,
+            'Gestor Chat',
+            'gestor-chat@example.com',
+            'manager-chat-token'
+        );
+
+        $player = $this->createUserWithRole(
+            UserRole::Player,
+            'Jugador Chat',
+            'jugador-chat@example.com',
+            'player-chat-token'
+        );
+
+        $game = Game::query()->create([
+            'title' => 'Juego Oculto',
+            'slug' => 'juego-oculto',
+            'description' => 'Descripcion de prueba',
+            'instructions' => 'Instrucciones de prueba',
+            'status' => GameStatus::Draft,
+            'game_url' => '/games/laberinto-cosmico/index.html',
+            'created_by' => $manager->id,
+        ]);
+
+        $response = $this->actingAs($player)->postJson(route('games.chat.store', $game), [
+            'message' => 'Hola desde fuera',
+        ]);
+
+        $response->assertNotFound();
+        $this->assertDatabaseCount(GameChatMessage::class, 0);
+    }
+
+    private function createUserWithRole(
+        UserRole $role,
+        string $name,
+        string $email,
+        string $apiToken
+    ): User {
+        Role::query()->firstOrCreate([
+            'name' => $role->value,
+        ], [
+            'label' => $role->label(),
+        ]);
+
+        $user = User::query()->create([
+            'name' => $name,
+            'email' => $email,
+            'password' => 'password',
+            'api_token' => $apiToken,
+        ]);
+
+        $user->syncRoles([$role]);
+
+        return $user;
     }
 }
