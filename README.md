@@ -204,6 +204,37 @@ Se usa `Docker` para que sea más fácil poner en marcha todo el proyecto.
 
 En vez de instalar cada cosa por separado, Docker levanta los servicios necesarios ya preparados.
 
+### GitHub, MCP y RabbitMQ
+
+En esta práctica no solo importa la app.
+También importa cómo se trabaja alrededor del proyecto.
+
+Por eso se ha montado esta parte:
+
+- `GitHub` se usa para organizar el trabajo con ramas, issues y pull requests.
+- `MCP de GitHub` se deja preparado para que una IA pueda conectarse al repositorio y ayudar con tareas reales.
+- `RabbitMQ` se usa para mover eventos en segundo plano sin bloquear la aplicación.
+
+La idea es esta:
+
+- alguien abre o actualiza una pull request,
+- GitHub puede avisar a Laravel,
+- Laravel guarda ese evento y lo manda a RabbitMQ,
+- una tarea en cola procesa lo ocurrido,
+- y el sistema puede dejar una revisión automática hecha con IA.
+
+También se usan eventos internos de la propia app.
+
+Por ejemplo:
+
+- cuando empieza una partida,
+- cuando termina,
+- o cuando se envía un mensaje en el chat.
+
+Esos eventos también pueden entrar en cola y procesarse aparte.
+
+Así se consigue que GitHub, la aplicación y la parte automática trabajen juntas y no como piezas separadas.
+
 ## Qué guarda la base de datos
 
 Las partes más importantes que guarda el sistema son estas:
