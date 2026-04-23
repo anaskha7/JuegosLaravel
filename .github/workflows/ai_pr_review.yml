@@ -1,0 +1,41 @@
+name: GitHub Review Bridge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  notify-laravel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preparar payload del evento
+        run: |
+          cat <<'JSON' > github-event.json
+          ${{ toJson(github.event) }}
+          JSON
+
+      - name: Enviar evento a Laravel
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          GITHUB_WEBHOOK_SECRET: ${{ secrets.GITHUB_WEBHOOK_SECRET }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "No hay WEBHOOK_URL configurada. Se omite el puente con Laravel."
+            exit 0
+          fi
+
+          BODY="$(cat github-event.json)"
+          SIGNATURE=""
+
+          if [ -n "$GITHUB_WEBHOOK_SECRET" ]; then
+            HASH="$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$GITHUB_WEBHOOK_SECRET" | sed 's/^.* //')"
+            SIGNATURE="sha256=$HASH"
+          fi
+
+          curl --fail --show-error --silent \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: pull_request" \
+            -H "X-Hub-Signature-256: $SIGNATURE" \
+            -d "$BODY" \
+            "$WEBHOOK_URL"

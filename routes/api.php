@@ -11,3 +11,5 @@ Route::middleware('api.token')->group(function (): void {
     Route::patch('/sessions/{session}/finish', [GameSessionController::class, 'finish']);
     Route::post('/sessions/{session}/emotions', [GameSessionController::class, 'storeEmotion']);
 });
+
+Route::post('/github/webhook', [\App\Http\Controllers\GitHubWebhookController::class, 'handle']);

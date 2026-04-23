@@ -1,0 +1,32 @@
+name: Error
+description: Reporta un fallo concreto del sistema.
+title: "[Error] "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: resumen
+    attributes:
+      label: Qué pasa
+      description: Explica el problema de forma corta y clara.
+      placeholder: Al abrir un juego no carga el chat...
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Cómo reproducirlo
+      description: Escribe los pasos para ver el error.
+      placeholder: |
+        1. Entrar con la cuenta de jugador
+        2. Abrir el catálogo
+        3. Entrar en Laberinto Cósmico
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Qué debería pasar
+      placeholder: El juego debería cargar y permitir jugar.
+    validations:
+      required: true

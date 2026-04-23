@@ -1,6 +1,6 @@
 import AppLayout from '../Layouts/AppLayout';
 
-export default function Dashboard({ stats, latestGames, latestSessions }) {
+export default function Dashboard({ stats, latestGames, latestSessions, latestIntegrationEvents }) {
     return (
         <AppLayout title="Dashboard">
             <section className="hero stack">
@@ -52,6 +52,14 @@ export default function Dashboard({ stats, latestGames, latestSessions }) {
                     <div className="metric-value">{stats.active_sessions}</div>
                     <div className="muted">Partidas activas</div>
                 </article>
+                <article className="metric-card tone-a">
+                    <div className="metric-value">{stats.integration_events}</div>
+                    <div className="muted">Eventos integrados</div>
+                </article>
+                <article className="metric-card tone-b">
+                    <div className="metric-value">{stats.queued_integrations}</div>
+                    <div className="muted">Pendientes en cola</div>
+                </article>
             </section>
 
             <section className="split-grid">
@@ -90,6 +98,27 @@ export default function Dashboard({ stats, latestGames, latestSessions }) {
                         ))}
                     </div>
                 </article>
+            </section>
+
+            <section className="card stack">
+                <span className="eyebrow">Integraciones</span>
+                <h2>GitHub, RabbitMQ y eventos internos</h2>
+                <div className="list">
+                    {latestIntegrationEvents.map((event) => (
+                        <div className="list-item list-item-rich" key={event.id}>
+                            <div className="mini-accent" />
+                            <div>
+                                <strong>
+                                    {event.source} · {event.event_name}
+                                </strong>
+                                <div className="muted">
+                                    {event.status} · {event.external_reference || 'sin referencia'} · {event.created_at}
+                                </div>
+                                <div className="muted">{event.summary}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </section>
         </AppLayout>
     );

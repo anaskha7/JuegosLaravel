@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Preguntas de uso
+    url: https://github.com/anaskha7/JuegosLaravel/discussions
+    about: Usa Discussions para dudas que no sean errores o mejoras concretas.

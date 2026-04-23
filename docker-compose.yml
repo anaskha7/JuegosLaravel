@@ -34,6 +34,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   reverb:
     build:
@@ -59,6 +61,40 @@ services:
     container_name: laraveljuegos-facial-service
     ports:
       - "8181:8181"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: laraveljuegos-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbitmq
+      RABBITMQ_DEFAULT_PASS: secret
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  queue-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laraveljuegos-queue-worker
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >
+      sh -lc "composer install &&
+      php artisan rabbitmq:queue-declare github-events rabbitmq &&
+      php artisan rabbitmq:queue-declare platform-events rabbitmq &&
+      php artisan queue:work rabbitmq --queue=github-events,platform-events --sleep=3 --tries=3 --timeout=120"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:
