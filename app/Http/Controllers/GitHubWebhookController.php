@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\ProcessGitHubEventJob;
 use App\Models\IntegrationEvent;
+use App\Services\GitHubEventDispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class GitHubWebhookController extends Controller
 {
-    public function handle(Request $request): JsonResponse
+    public function handle(Request $request, GitHubEventDispatcher $gitHubEventDispatcher): JsonResponse
     {
         if (! $this->hasValidSignature($request)) {
             return response()->json([
@@ -35,12 +35,12 @@ class GitHubWebhookController extends Controller
             ]);
         }
 
-        if ($event !== 'pull_request' || ! isset($payload['pull_request'])) {
+        if (! $gitHubEventDispatcher->supports($event, $payload)) {
             IntegrationEvent::query()->create([
                 'source' => 'github',
                 'event_name' => $event,
                 'status' => 'ignored',
-                'summary' => 'Evento de GitHub ignorado por no ser una pull request.',
+                'summary' => 'Evento de GitHub ignorado por no estar soportado en RabbitMQ.',
                 'payload' => $payload,
                 'processed_at' => now(),
             ]);
@@ -50,21 +50,7 @@ class GitHubWebhookController extends Controller
             ]);
         }
 
-        $action = (string) ($payload['action'] ?? 'opened');
-        $integrationEvent = IntegrationEvent::query()->create([
-            'source' => 'github',
-            'event_name' => 'pull_request.'.$action,
-            'status' => 'queued',
-            'queue_connection' => 'rabbitmq',
-            'queue_name' => 'github-events',
-            'external_reference' => $this->buildExternalReference($payload),
-            'summary' => 'Evento de pull request recibido y enviado a RabbitMQ.',
-            'payload' => $payload,
-        ]);
-
-        ProcessGitHubEventJob::dispatch($integrationEvent->id, $payload, $action)
-            ->onConnection('rabbitmq')
-            ->onQueue('github-events');
+        $integrationEvent = $gitHubEventDispatcher->dispatch($event, $payload);
 
         return response()->json([
             'status' => 'Evento de GitHub enviado a la cola.',
@@ -89,17 +75,5 @@ class GitHubWebhookController extends Controller
         $expectedSignature = 'sha256='.hash_hmac('sha256', $request->getContent(), $secret);
 
         return hash_equals($expectedSignature, $signature);
-    }
-
-    private function buildExternalReference(array $payload): ?string
-    {
-        $repository = $payload['repository']['full_name'] ?? null;
-        $pullRequestNumber = $payload['pull_request']['number'] ?? null;
-
-        if (! $repository || ! $pullRequestNumber) {
-            return null;
-        }
-
-        return $repository.'#'.$pullRequestNumber;
     }
 }

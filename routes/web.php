@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FaceReferenceController;
 use App\Http\Controllers\GameChatMessageController;
 use App\Http\Controllers\GameController;
+use App\Http\Controllers\GitHubSimulatorController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -49,6 +50,10 @@ Route::middleware('auth')->group(function (): void {
 
     Route::middleware('role:admin,manager')->group(function (): void {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/integraciones/github/simulador', [GitHubSimulatorController::class, 'index'])
+            ->name('github-simulator.index');
+        Route::post('/integraciones/github/simulador', [GitHubSimulatorController::class, 'store'])
+            ->name('github-simulator.store');
         Route::patch('/gestion/juegos/{game}/status', [GameController::class, 'toggleStatus'])->name('games.toggle-status');
         Route::resource('gestion/juegos', GameController::class)
             ->parameters(['juegos' => 'game'])

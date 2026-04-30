@@ -49,7 +49,7 @@ return [
         'openai_key' => env('OPENAI_API_KEY'),
         'openai_model' => env('OPENAI_REVIEW_MODEL', 'gpt-4o-mini'),
         'gemini_key' => env('GEMINI_API_KEY'),
-        'gemini_model' => env('GEMINI_REVIEW_MODEL', 'gemini-1.5-flash'),
+        'gemini_model' => env('GEMINI_REVIEW_MODEL', 'gemini-2.5-flash'),
     ],
 
 ];

@@ -88,6 +88,100 @@ class GitHubWebhookTest extends TestCase
         ]);
     }
 
+    public function test_push_event_is_queued_for_rabbitmq(): void
+    {
+        Queue::fake();
+        config()->set('services.github.webhook_secret', 'secret-webhook');
+
+        $payload = [
+            'ref' => 'refs/heads/main',
+            'after' => '7a1b2c3d4e5f67890123456789abcdef01234567',
+            'repository' => [
+                'full_name' => 'anaskha7/JuegosLaravel',
+            ],
+            'commits' => [
+                ['id' => '7a1b2c3', 'message' => 'Prueba de push'],
+            ],
+        ];
+
+        $response = $this->withHeaders($this->githubHeaders($payload, 'push', 'secret-webhook'))
+            ->postJson('/api/github/webhook', $payload);
+
+        $response->assertAccepted();
+
+        $this->assertDatabaseHas('integration_events', [
+            'source' => 'github',
+            'event_name' => 'commit.pushed',
+            'status' => 'queued',
+            'external_reference' => 'anaskha7/JuegosLaravel@7a1b2c3',
+        ]);
+
+        Queue::assertPushed(ProcessGitHubEventJob::class, 1);
+    }
+
+    public function test_merged_pull_request_event_is_queued_for_rabbitmq(): void
+    {
+        Queue::fake();
+        config()->set('services.github.webhook_secret', 'secret-webhook');
+
+        $payload = [
+            'action' => 'closed',
+            'repository' => [
+                'full_name' => 'anaskha7/JuegosLaravel',
+            ],
+            'pull_request' => [
+                'number' => 15,
+                'title' => 'Fusionar mejoras RabbitMQ',
+                'merged' => true,
+            ],
+        ];
+
+        $response = $this->withHeaders($this->githubHeaders($payload, 'pull_request', 'secret-webhook'))
+            ->postJson('/api/github/webhook', $payload);
+
+        $response->assertAccepted();
+
+        $this->assertDatabaseHas('integration_events', [
+            'source' => 'github',
+            'event_name' => 'pull_request.merged',
+            'status' => 'queued',
+            'external_reference' => 'anaskha7/JuegosLaravel#15',
+        ]);
+
+        Queue::assertPushed(ProcessGitHubEventJob::class, 1);
+    }
+
+    public function test_issue_opened_event_is_queued_for_rabbitmq(): void
+    {
+        Queue::fake();
+        config()->set('services.github.webhook_secret', 'secret-webhook');
+
+        $payload = [
+            'action' => 'opened',
+            'repository' => [
+                'full_name' => 'anaskha7/JuegosLaravel',
+            ],
+            'issue' => [
+                'number' => 21,
+                'title' => 'Investigar cola github-events',
+            ],
+        ];
+
+        $response = $this->withHeaders($this->githubHeaders($payload, 'issues', 'secret-webhook'))
+            ->postJson('/api/github/webhook', $payload);
+
+        $response->assertAccepted();
+
+        $this->assertDatabaseHas('integration_events', [
+            'source' => 'github',
+            'event_name' => 'issue.created',
+            'status' => 'queued',
+            'external_reference' => 'anaskha7/JuegosLaravel#21',
+        ]);
+
+        Queue::assertPushed(ProcessGitHubEventJob::class, 1);
+    }
+
     private function githubHeaders(array $payload, string $event, string $secret): array
     {
         $content = json_encode($payload, JSON_THROW_ON_ERROR);
