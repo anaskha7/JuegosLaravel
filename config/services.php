@@ -39,4 +39,17 @@ return [
         'timeout' => env('FACIAL_SERVICE_TIMEOUT', 60),
     ],
 
+    'github' => [
+        'token' => env('GITHUB_TOKEN'),
+        'webhook_secret' => env('GITHUB_WEBHOOK_SECRET'),
+    ],
+
+    'ai_review' => [
+        'provider' => env('AI_REVIEW_PROVIDER', 'openai'),
+        'openai_key' => env('OPENAI_API_KEY'),
+        'openai_model' => env('OPENAI_REVIEW_MODEL', 'gpt-4o-mini'),
+        'gemini_key' => env('GEMINI_API_KEY'),
+        'gemini_model' => env('GEMINI_REVIEW_MODEL', 'gemini-2.5-flash'),
+    ],
+
 ];

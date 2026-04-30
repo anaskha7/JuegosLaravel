@@ -1,0 +1,22 @@
+name: Mejora
+description: Propón una mejora funcional o técnica.
+title: "[Mejora] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: objetivo
+    attributes:
+      label: Qué se quiere mejorar
+      description: Explica la mejora de forma simple.
+      placeholder: Añadir más trazabilidad a los eventos del sistema...
+    validations:
+      required: true
+  - type: textarea
+    id: valor
+    attributes:
+      label: Para qué sirve
+      description: Indica por qué merece la pena hacerlo.
+      placeholder: Ayuda a controlar mejor qué pasa entre GitHub, RabbitMQ y la app.
+    validations:
+      required: true

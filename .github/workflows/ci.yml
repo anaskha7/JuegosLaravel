@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: laraveljuegos
+          POSTGRES_USER: laravel
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U laravel -d laraveljuegos"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Preparar PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: mbstring, pdo_pgsql, pgsql, dom, fileinfo, sockets
+          coverage: none
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar Composer
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Preparar entorno
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: laraveljuegos
+          DB_USERNAME: laravel
+          DB_PASSWORD: secret
+
+      - name: Ejecutar tests
+        run: php artisan test
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: laraveljuegos
+          DB_USERNAME: laravel
+          DB_PASSWORD: secret
+          QUEUE_CONNECTION: sync
+
+      - name: Instalar dependencias frontend
+        run: npm ci
+
+      - name: Compilar frontend
+        run: npm run build

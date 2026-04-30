@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessPlatformEventJob;
 use App\Models\EmotionReading;
 use App\Models\Game;
 use App\Models\GameSession;
+use App\Models\IntegrationEvent;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,6 +32,26 @@ class GameSessionController extends Controller
             'status' => 'in_progress',
             'metadata' => $validated['metadata'] ?? null,
         ]);
+
+        $integrationEvent = IntegrationEvent::query()->create([
+            'source' => 'app',
+            'event_name' => 'game.session.started',
+            'status' => 'queued',
+            'queue_connection' => 'rabbitmq',
+            'queue_name' => 'platform-events',
+            'external_reference' => 'session#'.$session->id,
+            'summary' => 'Inicio de partida enviado a RabbitMQ.',
+            'payload' => [
+                'game_id' => $game->id,
+                'game_title' => $game->title,
+                'session_id' => $session->id,
+                'user_id' => $request->user()->id,
+            ],
+        ]);
+
+        ProcessPlatformEventJob::dispatch($integrationEvent->id)
+            ->onConnection('rabbitmq')
+            ->onQueue('platform-events');
 
         return response()->json([
             'message' => 'Sesión iniciada.',
@@ -61,6 +83,27 @@ class GameSessionController extends Controller
                 ...($validated['metadata'] ?? []),
             ],
         ]);
+
+        $integrationEvent = IntegrationEvent::query()->create([
+            'source' => 'app',
+            'event_name' => 'game.session.finished',
+            'status' => 'queued',
+            'queue_connection' => 'rabbitmq',
+            'queue_name' => 'platform-events',
+            'external_reference' => 'session#'.$session->id,
+            'summary' => 'Fin de partida enviado a RabbitMQ.',
+            'payload' => [
+                'game_id' => $session->game_id,
+                'session_id' => $session->id,
+                'user_id' => $request->user()->id,
+                'score' => $session->score,
+                'duration_seconds' => $session->duration_seconds,
+            ],
+        ]);
+
+        ProcessPlatformEventJob::dispatch($integrationEvent->id)
+            ->onConnection('rabbitmq')
+            ->onQueue('platform-events');
 
         return response()->json([
             'message' => 'Sesión finalizada.',

@@ -24,6 +24,11 @@ export default function AppLayout({ title, children }) {
                                 Dashboard
                             </Link>
                         )}
+                        {privileged && (
+                            <Link className="nav-link" href="/integraciones/github/simulador">
+                                Simulador GitHub
+                            </Link>
+                        )}
                         <Link className="nav-link" href="/catalogo">
                             Catálogo
                         </Link>

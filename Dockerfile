@@ -1,4 +1,4 @@
-FROM php:8.5-cli
+FROM php:8.4-cli
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libzip-dev \
     zip \
-    && docker-php-ext-install pcntl pdo_pgsql pgsql zip \
+    && docker-php-ext-install pcntl pdo_pgsql pgsql zip sockets \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

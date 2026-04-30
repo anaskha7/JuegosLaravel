@@ -6,6 +6,7 @@ use App\Enums\GameStatus;
 use App\Enums\UserRole;
 use App\Models\Game;
 use App\Models\GameSession;
+use App\Models\IntegrationEvent;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,6 +24,8 @@ class DashboardController extends Controller
                 : Game::query()->where('status', GameStatus::Published)->count(),
             'sessions_played' => GameSession::query()->where('user_id', $user->id)->count(),
             'active_sessions' => GameSession::query()->where('status', 'in_progress')->count(),
+            'integration_events' => IntegrationEvent::query()->count(),
+            'queued_integrations' => IntegrationEvent::query()->whereIn('status', ['queued', 'processing'])->count(),
         ];
 
         $latestSessions = GameSession::query()
@@ -42,6 +45,11 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        $latestIntegrationEvents = IntegrationEvent::query()
+            ->latest()
+            ->limit(6)
+            ->get();
+
         return Inertia::render('Dashboard', [
             'stats' => $stats,
             'latestSessions' => $latestSessions->map(fn (GameSession $session) => [
@@ -56,6 +64,15 @@ class DashboardController extends Controller
                 'status' => $game->status->value,
                 'status_label' => $game->status->label(),
                 'creator_name' => $game->creator?->name,
+            ]),
+            'latestIntegrationEvents' => $latestIntegrationEvents->map(fn (IntegrationEvent $event) => [
+                'id' => $event->id,
+                'source' => strtoupper($event->source),
+                'event_name' => $event->event_name,
+                'status' => $event->status,
+                'summary' => $event->summary,
+                'external_reference' => $event->external_reference,
+                'created_at' => $event->created_at?->format('d/m/Y H:i'),
             ]),
         ]);
     }
